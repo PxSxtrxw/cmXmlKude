@@ -2,9 +2,15 @@
 
 Este repositorio contiene una extensión para la generacion de archivos Kude con estructuras XML previamente firmadas y con codigo Qr. El código está diseñado para generar Archivos Pdf con formato kude de los XML previamente generados,el programa esta diseñado para cuando se ejecute `server.js` se cree un servidor HTTP que escuche una estructura XML que cumpla con los requisitos para la generacion del archivo KUDE
 
-- java8Path: ruta del ejecutable de Java8
-- destFolder: Carpeta donde se guardara el Pdf Kude devuelto por el modulo
-- xmlPath: Estructura Xml Firmada y con codigo Qr
+## Archivo de Entorno
+Es necesario configurar correctamente el archivo .env para el correcto uso del proyecto, este repositorio ya incluye todos los archivos necesarios para la generacion del Kude pero tienes que adaptarlo segun la ruta de la maquina que se utilize aqui un ejemplo de como configurarlo
+
+```bash
+JAVA8_PATH= C:ruta/al/ejecutable/java.exe
+DEST_FOLDER= C:ruta/a/la/carpeta/output/
+SRC_JASPER= C:ruta/al/node_modules/facturacionelectronicapy-kude/dist/DE/
+CREATE_KUDE_JAR_PATH= C:ruta/al//node_modules/facturacionelectronicapy-kude/dist/createKude.jar
+```
 
 ## Requerimientos
 
