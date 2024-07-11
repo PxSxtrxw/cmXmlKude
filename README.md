@@ -5,8 +5,7 @@ Este repositorio contiene una extensión para la generacion de archivos Kude con
 ## Archivo de Entorno
 Es necesario configurar correctamente el archivo .env para el correcto uso del proyecto, este repositorio ya incluye todos los archivos necesarios para la generacion del Kude pero tienes que adaptarlo segun la ruta de la maquina que se utilize aqui un ejemplo de como configurarlo
 
-```
-
+```bash
 JAVA8_PATH= C:ruta/al/ejecutable/java.exe
 
 DEST_FOLDER= C:ruta/a/la/carpeta/output/
@@ -14,7 +13,6 @@ DEST_FOLDER= C:ruta/a/la/carpeta/output/
 SRC_JASPER= C:ruta/al/node_modules/facturacionelectronicapy-kude/dist/DE/
 
 CREATE_KUDE_JAR_PATH= C:ruta/al//node_modules/facturacionelectronicapy-kude/dist/createKude.jar
-
 ```
 
 ## Requerimientos
