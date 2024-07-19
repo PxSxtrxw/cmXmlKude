@@ -145,5 +145,5 @@ const server = http.createServer((req, res) => {
 
 const PORT = 3004;
 server.listen(PORT, () => {
-  logger.info(`Servidor iniciado en http://localhost:${PORT}`);
+  console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });
