@@ -11,12 +11,6 @@ const destFolder = process.env.DEST_FOLDER;
 const srcJasper = process.env.SRC_JASPER;
 const createKudeJarPath = process.env.CREATE_KUDE_JAR_PATH;
 
-// Función para generar un nombre de archivo único basado en la fecha y hora actual
-function generateUniqueFileName(prefix, extension) {
-  const timestamp = new Date().getTime();
-  return `${prefix}_${timestamp}.${extension}`;
-}
-
 // Función para limpiar el nombre de archivo de caracteres especiales
 function sanitizeFileName(fileName) {
   return fileName.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
@@ -81,52 +75,80 @@ const server = http.createServer((req, res) => {
     // Procesar datos cuando se complete la recepción
     req.on('end', () => {
       try {
-        // Extraer el XML recibido
-        const xmlString = data.trim();
+        // Parsear el JSON recibido
+        const jsonData = JSON.parse(data);
 
-        // Generar nombre de archivo temporal único
-        const xmlFileName = generateUniqueFileName('temp', 'xml');
-        const xmlFilePath = path.join(destFolder, xmlFileName);
+        // Obtener la ruta al archivo XML desde el JSON
+        const xmlFilePath = jsonData.xml;
 
-        // Guardar el XML correctamente en un archivo temporal
-        fs.writeFileSync(xmlFilePath, xmlString);
+        // Comprobar si el archivo existe antes de leerlo
+        if (!fs.existsSync(xmlFilePath)) {
+          const errorMessage = 'El archivo XML no existe en la ruta especificada';
+          errorLogger.error(errorMessage);
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: errorMessage }));
+          return;
+        }
 
-        // Parámetros JSON opcionales
-        const jsonParam = JSON.stringify({ param1: "value1", param2: "value2" });
-
-        // Llamar a la función para generar KUDE con los datos dinámicos
-        generateKUDEInMemory(java8Path, xmlFilePath, srcJasper, destFolder, jsonParam)
-          .then(() => {
-            logger.info('Generación de KUDE completada.');
-
-            // Buscar el archivo PDF más reciente en la carpeta de destino
-            const mostRecentFile = getMostRecentFile(destFolder);
-
-            if (!mostRecentFile) {
-              throw new Error("No se encontró ningún archivo PDF en la carpeta de destino.");
-            }
-
-            logger.info(`Archivo PDF más reciente encontrado: ${mostRecentFile}`);
-
-            const sanitizedFileName = sanitizeFileName(path.basename(mostRecentFile));
-            const sanitizedFilePath = path.join(destFolder, sanitizedFileName);
-
-            // Renombrar el archivo con el nombre sanitizado
-            fs.renameSync(mostRecentFile, sanitizedFilePath);
-
-            logger.info(`KUDE generado exitosamente. Nombre del archivo: ${sanitizedFileName}`);
-
-            // Responder al cliente con el nombre del archivo generado
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ fileName: sanitizedFileName }));
-          })
-          .catch(error => {
-            const errorMessage = 'Error generando KUDE';
-            errorLogger.error(`${errorMessage}: ${error}`);
+        // Leer el archivo XML desde la ruta especificada con codificación UTF-8
+        fs.readFile(xmlFilePath, 'utf8', (err, xmlString) => {
+          if (err) {
+            const errorMessage = 'Error al leer el archivo XML';
+            errorLogger.error(`${errorMessage}: ${err}`);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: errorMessage }));
-          });
+            return;
+          }
 
+          // Verifica si el contenido XML es válido o tiene la estructura esperada
+          if (!xmlString || xmlString.trim() === '') {
+            const errorMessage = 'El contenido del archivo XML está vacío o no es válido';
+            errorLogger.error(errorMessage);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: errorMessage }));
+            return;
+          }
+
+          // Crear un archivo temporal para almacenar el contenido XML
+          const tempXmlPath = path.join(destFolder, 'temp_kude.xml');
+          fs.writeFileSync(tempXmlPath, xmlString, 'utf8');
+
+          // Parámetros JSON opcionales
+          const jsonParam = JSON.stringify({ param1: "value1", param2: "value2" });
+
+          // Llamar a la función para generar KUDE usando el archivo temporal
+          generateKUDEInMemory(java8Path, tempXmlPath, srcJasper, destFolder, jsonParam)
+            .then(() => {
+              logger.info('Generación de KUDE completada.');
+
+              // Buscar el archivo PDF más reciente en la carpeta de destino
+              const mostRecentFile = getMostRecentFile(destFolder);
+
+              if (!mostRecentFile) {
+                throw new Error("No se encontró ningún archivo PDF en la carpeta de destino.");
+              }
+
+              logger.info(`Archivo PDF más reciente encontrado: ${mostRecentFile}`);
+
+              const sanitizedFileName = sanitizeFileName(path.basename(mostRecentFile));
+              const sanitizedFilePath = path.join(destFolder, sanitizedFileName);
+
+              // Renombrar el archivo con el nombre sanitizado
+              fs.renameSync(mostRecentFile, sanitizedFilePath);
+
+              logger.info(`KUDE generado exitosamente. Nombre del archivo: ${sanitizedFileName}`);
+
+              // Responder al cliente con el nombre del archivo generado
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ fileName: sanitizedFileName }));
+            })
+            .catch(error => {
+              const errorMessage = 'Error generando KUDE';
+              errorLogger.error(`${errorMessage}: ${error}`);
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: errorMessage }));
+            });
+        });
       } catch (error) {
         const errorMessage = 'Error al procesar los datos';
         errorLogger.error(`${errorMessage}: ${error}`);
